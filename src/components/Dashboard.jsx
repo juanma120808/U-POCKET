@@ -1,173 +1,353 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
-export default function Dashboard({ userProfile, addExpense, totalExpenses, history, changeTheme }) {
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [expenseName, setExpenseName] = useState('');
-  const [termometerStatus, setTermometerStatus] = useState('safe');
-  
-  const remainingBalance = userProfile.initialBalance - totalExpenses;
-  const isCritical = remainingBalance < userProfile.fixedExpenses; 
+export default function Dashboard({ 
+  userProfile, 
+  expenses, 
+  remainingBalance, 
+  isCritical, 
+  openTxModal, 
+  openFundsModal, 
+  pockets, 
+  setActiveTab 
+}) {
+  // Aggregate category sums
+  const fixedTotal = expenses.filter(e => e.type === 'Fixed').reduce((acc, curr) => acc + curr.amount, 0);
+  const leisureTotal = expenses.filter(e => e.type === 'Leisure').reduce((acc, curr) => acc + curr.amount, 0);
+  const minorTotal = expenses.filter(e => e.type === 'Minor').reduce((acc, curr) => acc + curr.amount, 0);
+  const totalSpent = fixedTotal + leisureTotal + minorTotal;
 
-  // Calculate categories
-  const fijosTotal = history.filter(h => h.type === 'Fijos').reduce((a, b) => a + b.amount, 0);
-  const hormigaTotal = history.filter(h => h.type === 'Hormiga').reduce((a, b) => a + b.amount, 0);
-  const ocioTotal = history.filter(h => h.type === 'Ocio').reduce((a, b) => a + b.amount, 0);
+  // Calculate percentages for categories
+  const fixedPercent = totalSpent > 0 ? Math.round((fixedTotal / totalSpent) * 100) : 0;
+  const leisurePercent = totalSpent > 0 ? Math.round((leisureTotal / totalSpent) * 100) : 0;
+  const minorPercent = totalSpent > 0 ? Math.round((minorTotal / totalSpent) * 100) : 0;
 
-  useEffect(() => {
-    if (isCritical) {
-      setTermometerStatus('critical');
-    } else {
-      setTermometerStatus('safe');
-    }
-  }, [remainingBalance, isCritical]);
+  // Aggregate pocket progress
+  const totalSaved = pockets.reduce((acc, p) => acc + p.currentAmount, 0);
+  const totalTarget = pockets.reduce((acc, p) => acc + p.targetAmount, 0);
+  const savingGoalPercent = totalTarget > 0 ? Math.min(100, Math.round((totalSaved / totalTarget) * 100)) : 0;
+  const savingRemaining = Math.max(0, totalTarget - totalSaved);
 
-  const handleAddExpense = (type) => {
-    if (!expenseAmount || parseFloat(expenseAmount) <= 0) return;
-    
-    addExpense({
-      type,
-      name: expenseName || type,
-      amount: parseFloat(expenseAmount),
-      date: new Date().toISOString()
-    });
-    setExpenseAmount('');
-    setExpenseName('');
+  // Formatting currency helper
+  const formatMoney = (val) => `$${parseFloat(val).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Slice the 4 most recent expenses
+  const recentExpenses = expenses.slice(0, 4);
+
+  // SVG dash offset calculation helper
+  // Circumference = 2 * PI * r = 2 * 3.14159 * 20 = 125.66
+  const getStrokeDashOffset = (percentage) => {
+    const r = 20;
+    const circ = 2 * Math.PI * r;
+    return circ - (Math.min(percentage, 100) / 100) * circ;
   };
 
   return (
-    <div className="flex flex-col h-100">
-      <div className="animate-fade-in flex-1">
-        
-        {/* Header con Tema */}
-        <div className="flex justify-between align-center mb-6">
-          <h2 style={{ fontSize: '24px', letterSpacing: '-0.02em' }}>Dashboard</h2>
-          <select 
-            onChange={(e) => changeTheme(e.target.value)} 
-            className="input-field" 
-            style={{ width: 'auto', marginBottom: 0, padding: '8px 12px', fontSize: '13px' }}
-          >
-            <option value="dark">🌙 Dark</option>
-            <option value="light">☀️ Light</option>
-            <option value="neon">⚡ Neon</option>
-          </select>
-        </div>
-
-        {/* Panel Superior: Saldo Disponible */}
-        <div className="glass-panel text-center mb-6" style={{ position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, var(--color-accent) 0%, transparent 60%)', opacity: 0.1, zIndex: 0 }}></div>
-          
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <p className="label">Saldo Disponible</p>
-            <h1 className="text-accent tabular-nums" style={{ fontSize: '56px', marginBottom: '8px', textShadow: '0 0 20px rgba(139, 92, 246, 0.3)', lineHeight: 1 }}>
-              ${remainingBalance.toLocaleString('es-CO')}
-            </h1>
-            
-            <div style={{ background: 'var(--border-glass)', height: '4px', borderRadius: '2px', marginTop: '24px', overflow: 'hidden' }}>
-              <div style={{ 
-                background: isCritical ? 'var(--color-danger)' : 'var(--color-safe)', 
-                height: '100%', 
-                width: `${Math.max(0, Math.min(100, (remainingBalance / userProfile.initialBalance) * 100))}%`,
-                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: `0 0 10px ${isCritical ? 'var(--color-danger)' : 'var(--color-safe)'}`
-              }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Layout de dos columnas para Ingreso vs Stats */}
-        <div className="flex gap-4 mb-6" style={{ flexWrap: 'wrap' }}>
-          
-          {/* Ingreso Rápido */}
-          <div className="glass-panel" style={{ flex: '1 1 300px' }}>
-            <h3 className="mb-4" style={{ fontSize: '16px' }}>Ingreso Rápido</h3>
-            
-            <div className="flex flex-col gap-2 mb-4">
-              <input 
-                type="text" 
-                className="input-field mb-0" 
-                placeholder="Descripción (opcional)" 
-                value={expenseName}
-                onChange={(e) => setExpenseName(e.target.value)}
-              />
-              <input 
-                type="number" 
-                className="input-field tabular-nums mb-0" 
-                placeholder="$ Monto" 
-                value={expenseAmount}
-                onChange={(e) => setExpenseAmount(e.target.value)}
-                style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--color-accent)' }}
-              />
-            </div>
-            
-            <div className="flex justify-between gap-2 mt-4">
-              <button className="btn btn-glass" style={{flex: 1, flexDirection: 'column', padding: '12px 4px'}} onClick={() => handleAddExpense('Fijos')}>
-                <span style={{fontSize: '20px'}}>🚌</span>
-                <span style={{fontSize: '11px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em'}}>Fijo</span>
-              </button>
-              <button className="btn btn-glass" style={{flex: 1, flexDirection: 'column', padding: '12px 4px'}} onClick={() => handleAddExpense('Hormiga')}>
-                <span style={{fontSize: '20px'}}>🐜</span>
-                <span style={{fontSize: '11px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em'}}>Hormiga</span>
-              </button>
-              <button className="btn btn-glass" style={{flex: 1, flexDirection: 'column', padding: '12px 4px'}} onClick={() => handleAddExpense('Ocio')}>
-                <span style={{fontSize: '20px'}}>🍿</span>
-                <span style={{fontSize: '11px', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.05em'}}>Ocio</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Estadísticas Visuales (Donut) */}
-          <div className="glass-panel flex flex-col align-center justify-between" style={{ flex: '1 1 300px' }}>
-            <h3 className="mb-4 w-100 text-left" style={{ fontSize: '16px', width: '100%' }}>Distribución de Gastos</h3>
-            
-            <div className="donut-chart mb-4 mt-2">
-              <div className="donut-inner">
-                <span className="tabular-nums" style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                  ${totalExpenses > 1000 ? (totalExpenses/1000).toFixed(1) + 'k' : totalExpenses}
+    <div className="space-y-lg animate-fade-in">
+      
+      {/* 1. Hero Section: Available Balance */}
+      <section className="relative">
+        <div className="glass-card p-lg md:p-xl rounded-xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] -mr-32 -mt-32"></div>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-lg relative z-10">
+            <div>
+              <span className="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mb-xs block">Saldo Disponible</span>
+              <h2 className="font-display-lg text-[40px] md:text-display-lg text-primary tracking-tight font-bold font-mono">
+                {formatMoney(remainingBalance)}
+              </h2>
+              <div className="flex items-center gap-sm mt-sm">
+                <span className={`flex items-center gap-xs font-label-md text-label-md px-sm py-xs rounded border ${
+                  isCritical 
+                    ? 'text-error bg-error/10 border-error/20' 
+                    : 'text-tertiary bg-tertiary/10 border-tertiary/20'
+                }`}>
+                  <span className="material-symbols-outlined text-sm">
+                    {isCritical ? 'warning' : 'trending_flat'}
+                  </span>
+                  {isCritical ? 'Fijos en Riesgo' : 'Presupuesto Seguro'}
                 </span>
-                <p style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>Gastado</p>
+                <span className="text-on-surface-variant font-body-md text-body-md">
+                  {isCritical 
+                    ? `¡Gastos fijos superan tu saldo en ${formatMoney(Math.abs(remainingBalance - userProfile.fixedExpenses))}!` 
+                    : `Gastos fijos de ${formatMoney(userProfile.fixedExpenses)} protegidos`}
+                </span>
               </div>
             </div>
-
-            <div className="flex justify-between w-100 gap-4" style={{ width: '100%', fontSize: '12px' }}>
-              <div className="text-center">
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-support)', margin: '0 auto 4px' }}></div>
-                <span className="text-muted">Fijos</span>
-                <p className="tabular-nums font-bold">${fijosTotal}</p>
-              </div>
-              <div className="text-center">
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-danger)', margin: '0 auto 4px' }}></div>
-                <span className="text-muted">Hormiga</span>
-                <p className="tabular-nums font-bold">${hormigaTotal}</p>
-              </div>
-              <div className="text-center">
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-accent)', margin: '0 auto 4px' }}></div>
-                <span className="text-muted">Ocio</span>
-                <p className="tabular-nums font-bold">${ocioTotal}</p>
-              </div>
+            
+            <div className="flex gap-md shrink-0">
+              <button 
+                onClick={openFundsModal}
+                className="bg-primary text-on-primary font-label-md text-label-md px-lg py-md rounded-lg font-bold hover:shadow-[0_0_20px_rgba(208,188,255,0.4)] transition-all active:scale-[0.98]"
+              >
+                Ajustar Presupuesto
+              </button>
+              <button 
+                onClick={openTxModal}
+                className="border border-outline-variant/30 text-on-surface hover:bg-white/5 font-label-md text-label-md px-lg py-md rounded-lg font-bold transition-all active:scale-[0.98]"
+              >
+                Registrar Gasto
+              </button>
             </div>
           </div>
-          
+        </div>
+      </section>
+
+      {/* 2. Grid Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+        
+        {/* Left Column: Recent Transactions (Span 2) */}
+        <div className="lg:col-span-2 space-y-lg">
+          <div className="glass-card rounded-xl overflow-hidden flex flex-col h-full border border-outline-variant/20">
+            <div className="p-lg border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest/30">
+              <h3 className="font-headline-md text-headline-md font-semibold flex items-center gap-xs">
+                <span className="material-symbols-outlined text-primary">receipt_long</span>
+                Gastos Recientes
+              </h3>
+              <button 
+                onClick={() => setActiveTab('history')}
+                className="text-primary font-label-md text-label-md hover:underline font-bold transition-all"
+              >
+                Ver Historial
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-surface-container-low/40">
+                  <tr className="border-b border-outline-variant/20">
+                    <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Concepto / Entidad</th>
+                    <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Categoría</th>
+                    <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Fecha</th>
+                    <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/10">
+                  {recentExpenses.length > 0 ? (
+                    recentExpenses.map((tx, idx) => {
+                      // Styling variables based on category
+                      let iconName = 'shopping_cart';
+                      let catColor = 'secondary';
+                      let iconColor = 'text-primary';
+                      let labelText = 'Fijo';
+
+                      if (tx.type === 'Leisure') {
+                        iconName = 'movie';
+                        catColor = 'tertiary';
+                        iconColor = 'text-tertiary';
+                        labelText = 'Ocio';
+                      } else if (tx.type === 'Minor') {
+                        iconName = 'coffee';
+                        catColor = 'outline';
+                        iconColor = 'text-outline';
+                        labelText = 'Hormiga';
+                      }
+
+                      return (
+                        <tr key={idx} className="hover:bg-white/[0.02] transition-colors cursor-pointer group">
+                          <td className="px-lg py-md">
+                            <div className="flex items-center gap-md">
+                              <div className="h-10 w-10 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/20 group-hover:border-primary/40 transition-colors">
+                                <span className={`material-symbols-outlined ${iconColor}`}>{iconName}</span>
+                              </div>
+                              <div>
+                                <p className="font-body-md text-body-md font-semibold text-on-surface">{tx.name}</p>
+                                <p className="text-xs text-on-surface-variant truncate max-w-[200px]">{tx.details}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-lg py-md">
+                            <span className={`px-sm py-xs bg-${catColor}/10 text-${catColor} border border-${catColor}/20 rounded-full text-[10px] font-bold uppercase tracking-wider`}>
+                              {labelText}
+                            </span>
+                          </td>
+                          <td className="px-lg py-md font-data-tabular text-on-surface-variant text-xs">
+                            {new Date(tx.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="px-lg py-md text-right font-mono font-bold text-error">
+                            -{formatMoney(tx.amount)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="px-lg py-12 text-center text-on-surface-variant font-body-md">
+                        <span className="material-symbols-outlined text-[36px] text-on-surface-variant/40 block mb-sm">database</span>
+                        No hay gastos registrados en este periodo.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
-        {/* Termómetro Dinámico */}
-        <div 
-          className="glass-panel" 
-          style={{ 
-            borderColor: termometerStatus === 'critical' ? 'var(--color-danger)' : 'var(--border-glass)',
-            background: termometerStatus === 'critical' ? 'rgba(255, 180, 171, 0.05)' : 'var(--bg-panel)',
-            boxShadow: termometerStatus === 'critical' ? '0 0 20px rgba(255, 180, 171, 0.1)' : 'var(--shadow-glass)'
-          }}
-        >
-          <h4 className="mb-2 flex align-center gap-2" style={{ color: termometerStatus === 'critical' ? 'var(--color-danger)' : 'var(--color-text-main)' }}>
-            {termometerStatus === 'critical' ? '⚠️ Riesgo Financiero Detectado' : '✅ Finanzas Estables'}
-          </h4>
-          <p className="text-muted" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-            {termometerStatus === 'critical' 
-              ? 'Atención: Tu saldo actual es inferior a tus gastos fijos planificados. Considera reducir gastos hormiga y ocio para asegurar tus compromisos.' 
-              : 'Tus gastos operativos están cubiertos. Mantén este ritmo para asegurar tus fondos de emergencia y metas de ahorro.'}
-          </p>
+        {/* Right Column: Spending Analytics & Savings (Span 1) */}
+        <div className="space-y-lg">
+          
+          {/* Spending Analytics Bento Card */}
+          <div className="glass-card p-lg rounded-xl flex flex-col border border-outline-variant/20">
+            <h3 className="font-headline-md text-headline-md font-semibold mb-lg flex items-center gap-xs">
+              <span className="material-symbols-outlined text-primary">analytics</span>
+              Distribución de Gastos
+            </h3>
+            
+            <div className="space-y-md">
+              {/* Fixed Expenses Row */}
+              <div className="flex items-center justify-between p-md bg-white/[0.02] rounded-lg border border-outline-variant/10 hover:border-primary/20 transition-all">
+                <div className="flex items-center gap-md">
+                  <div className="relative w-12 h-12 flex-shrink-0">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle className="text-outline-variant/20" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeWidth="3"></circle>
+                      <circle 
+                        className="text-secondary transition-all duration-1000" 
+                        cx="24" 
+                        cy="24" 
+                        fill="transparent" 
+                        r="20" 
+                        stroke="currentColor" 
+                        strokeWidth="3.5" 
+                        strokeDasharray={2 * Math.PI * 20} 
+                        strokeDashoffset={getStrokeDashOffset(fixedPercent)}
+                      ></circle>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-mono font-bold text-on-surface">{fixedPercent}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-body-md text-body-md font-semibold text-on-surface">Gastos Fijos</p>
+                    <p className="text-xs text-on-surface-variant font-mono">{formatMoney(fixedTotal)}</p>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-on-surface-variant text-sm">commute</span>
+              </div>
+
+              {/* Leisure Row */}
+              <div className="flex items-center justify-between p-md bg-white/[0.02] rounded-lg border border-outline-variant/10 hover:border-primary/20 transition-all">
+                <div className="flex items-center gap-md">
+                  <div className="relative w-12 h-12 flex-shrink-0">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle className="text-outline-variant/20" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeWidth="3"></circle>
+                      <circle 
+                        className="text-tertiary transition-all duration-1000" 
+                        cx="24" 
+                        cy="24" 
+                        fill="transparent" 
+                        r="20" 
+                        stroke="currentColor" 
+                        strokeWidth="3.5" 
+                        strokeDasharray={2 * Math.PI * 20} 
+                        strokeDashoffset={getStrokeDashOffset(leisurePercent)}
+                      ></circle>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-mono font-bold text-on-surface">{leisurePercent}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-body-md text-body-md font-semibold text-on-surface">Gastos de Ocio</p>
+                    <p className="text-xs text-on-surface-variant font-mono">{formatMoney(leisureTotal)}</p>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-on-surface-variant text-sm">movie</span>
+              </div>
+
+              {/* Minor/Hormiga Row */}
+              <div className="flex items-center justify-between p-md bg-white/[0.02] rounded-lg border border-outline-variant/10 hover:border-primary/20 transition-all">
+                <div className="flex items-center gap-md">
+                  <div className="relative w-12 h-12 flex-shrink-0">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle className="text-outline-variant/20" cx="24" cy="24" fill="transparent" r="20" stroke="currentColor" strokeWidth="3"></circle>
+                      <circle 
+                        className="text-outline transition-all duration-1000" 
+                        cx="24" 
+                        cy="24" 
+                        fill="transparent" 
+                        r="20" 
+                        stroke="currentColor" 
+                        strokeWidth="3.5" 
+                        strokeDasharray={2 * Math.PI * 20} 
+                        strokeDashoffset={getStrokeDashOffset(minorPercent)}
+                      ></circle>
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-mono font-bold text-on-surface">{minorPercent}%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-body-md text-body-md font-semibold text-on-surface">Gastos Hormiga</p>
+                    <p className="text-xs text-on-surface-variant font-mono">{formatMoney(minorTotal)}</p>
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-on-surface-variant text-sm">coffee</span>
+              </div>
+            </div>
+
+            {/* Savings Goal Progress */}
+            <div className="mt-xl pt-lg border-t border-outline-variant/10">
+              <div 
+                className="flex justify-between items-center mb-md cursor-pointer hover:opacity-80"
+                onClick={() => setActiveTab('pockets')}
+              >
+                <h4 className="font-label-md text-label-md uppercase text-on-surface-variant font-bold flex items-center gap-xs">
+                  <span className="material-symbols-outlined text-primary text-[16px]">savings</span>
+                  Meta Global Ahorros
+                </h4>
+                <span className="text-primary font-bold font-mono">{savingGoalPercent}%</span>
+              </div>
+              <div className="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+                <div 
+                  className="bg-primary h-full rounded-full progress-bar-glow transition-all duration-1000"
+                  style={{ width: `${savingGoalPercent}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-on-surface-variant mt-md leading-relaxed">
+                {savingRemaining > 0 
+                  ? `Faltan ${formatMoney(savingRemaining)} para alcanzar tus metas de ahorro.` 
+                  : '¡Felicitaciones! Has completado tus metas de ahorro actuales.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Dynamic Smart Insights Status Card */}
+          <div 
+            className={`glass-card p-lg rounded-xl border relative overflow-hidden flex flex-col justify-between h-48 group cursor-pointer ${
+              isCritical 
+                ? 'border-error/40 bg-error/5 hover:bg-error/10' 
+                : 'border-primary/20 bg-primary/5 hover:bg-primary/10'
+            }`}
+            onClick={() => setActiveTab('progress')}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[50px]"></div>
+            
+            <div className="relative z-10 flex justify-between items-start">
+              <div>
+                <span className={`font-label-md text-label-md uppercase tracking-wider font-bold block mb-xs ${
+                  isCritical ? 'text-error' : 'text-primary'
+                }`}>
+                  {isCritical ? 'Alerta de Riesgo' : 'Smart Insights'}
+                </span>
+                <h4 className="font-headline-md text-white font-bold leading-tight">
+                  {isCritical ? 'Presupuesto Fijo Comprometido' : '¡Excelente Salud Financiera!'}
+                </h4>
+              </div>
+              <span className={`material-symbols-outlined text-[26px] ${isCritical ? 'text-error animate-pulse' : 'text-primary'}`}>
+                {isCritical ? 'warning' : 'auto_awesome'}
+              </span>
+            </div>
+            
+            <p className="font-body-md text-body-md text-white/70 relative z-10 leading-relaxed line-clamp-3">
+              {isCritical 
+                ? `Tu saldo disponible es menor que tus gastos fijos. Evita gastos hormiga (como cafés o snacks) para proteger tu renta y servicios obligatorios.` 
+                : `¡Vas por excelente camino! Tus gastos fijos están protegidos. Has mantenido los gastos menores bajo control esta semana.`}
+            </p>
+          </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }
