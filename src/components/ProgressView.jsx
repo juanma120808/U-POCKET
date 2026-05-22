@@ -33,8 +33,13 @@ export default function ProgressView({
     ? Math.max(0, Math.min(10, parseFloat(((remainingBalance / userProfile.initialBalance) * 10).toFixed(1))))
     : 0;
 
-  // Projection (weekly savings * 52)
-  const annualProjection = remainingBalance > 0 ? remainingBalance * 52 : 0;
+  // Weekly savings estimate (uses the user's declared weekly savings goal, or a 20% estimated saving rate from their remaining budget as fallback)
+  const weeklySaving = parseFloat(userProfile.savingGoal) > 0 
+    ? parseFloat(userProfile.savingGoal) 
+    : (remainingBalance > 0 ? remainingBalance * 0.2 : 0);
+
+  // Proyectar el ahorro semanal a un año completo (52 semanas)
+  const annualProjection = weeklySaving * 52;
 
   // Mock bar height calculations
   // Jun Real height: (totalSpent / initialBalance) * 80. Max 100.
@@ -331,7 +336,7 @@ export default function ProgressView({
           <div>
             <p className="font-label-md text-label-md text-on-surface-variant font-bold">Ahorro Promedio Semanal</p>
             <h4 className="font-headline-md text-headline-md font-bold text-on-surface font-mono">
-              {formatMoney(userProfile.savingGoal || remainingBalance * 0.2)}
+              {formatMoney(weeklySaving)}
             </h4>
           </div>
         </div>
