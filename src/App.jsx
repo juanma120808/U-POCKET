@@ -223,8 +223,8 @@ function App() {
   // open and prepopulate forms
   const openFundsModal = () => {
     if (userProfile) {
-      setAdjInitialBalance(userProfile.initialBalance);
-      setAdjFixedExpenses(userProfile.fixedExpenses);
+      setAdjInitialBalance(userProfile.initialBalance.toString());
+      setAdjFixedExpenses(userProfile.fixedExpenses.toString());
       setShowFundsModal(true);
     }
   };

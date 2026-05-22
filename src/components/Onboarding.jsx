@@ -26,9 +26,9 @@ export default function Onboarding({ onComplete }) {
   
   // Starting Pockets Seed Config
   const [activePockets, setActivePockets] = useState([
-    { id: '1', name: 'Fondo de Emergencia', targetAmount: 2000, currentAmount: 0, category: 'Seguridad', date: 'Indefinido', icon: 'health_and_safety', checked: true },
-    { id: '2', name: 'Viajes / Vacaciones', targetAmount: 3000, currentAmount: 0, category: 'Lifestyle', date: 'Dic 2026', icon: 'flight_takeoff', checked: false },
-    { id: '3', name: 'Tecnología', targetAmount: 1500, currentAmount: 0, category: 'Productividad', date: 'Dic 2026', icon: 'laptop_mac', checked: false },
+    { id: '1', name: 'Fondo de Emergencia', targetAmount: '2000', currentAmount: '', category: 'Seguridad', date: 'Indefinido', icon: 'health_and_safety', checked: true },
+    { id: '2', name: 'Viajes / Vacaciones', targetAmount: '3000', currentAmount: '', category: 'Lifestyle', date: 'Dic 2026', icon: 'flight_takeoff', checked: false },
+    { id: '3', name: 'Tecnología', targetAmount: '1500', currentAmount: '', category: 'Productividad', date: 'Dic 2026', icon: 'laptop_mac', checked: false },
   ]);
 
   // Fixed Expenses State
@@ -149,7 +149,7 @@ export default function Onboarding({ onComplete }) {
   // Change pocket amount
   const handlePocketAmountChange = (id, field, value) => {
     setActivePockets(activePockets.map(p => {
-      if (p.id === id) return { ...p, [field]: parseFloat(value) || 0 };
+      if (p.id === id) return { ...p, [field]: value };
       return p;
     }));
   };
@@ -175,7 +175,7 @@ export default function Onboarding({ onComplete }) {
       }
       const totalSeeds = activePockets
         .filter(p => p.checked)
-        .reduce((sum, p) => sum + p.currentAmount, 0);
+        .reduce((sum, p) => sum + (parseFloat(p.currentAmount) || 0), 0);
 
       if (totalSeeds > parseFloat(balance)) {
         alert(`Tus fondos de ahorro semilla (${formatMoney(totalSeeds)}) no pueden exceder tus ingresos iniciales (${formatMoney(parseFloat(balance))}).`);
@@ -213,8 +213,8 @@ export default function Onboarding({ onComplete }) {
       .map(p => ({
         id: p.id,
         name: p.name,
-        targetAmount: p.targetAmount,
-        currentAmount: p.currentAmount,
+        targetAmount: parseFloat(p.targetAmount) || 0,
+        currentAmount: parseFloat(p.currentAmount) || 0,
         category: p.category,
         date: p.date,
         icon: p.icon

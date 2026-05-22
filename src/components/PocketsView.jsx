@@ -17,7 +17,7 @@ export default function PocketsView({
   // New Pocket Form State
   const [pocketName, setPocketName] = useState('');
   const [pocketTarget, setPocketTarget] = useState('');
-  const [pocketCurrent, setPocketCurrent] = useState('0');
+  const [pocketCurrent, setPocketCurrent] = useState('');
   const [pocketCategory, setPocketCategory] = useState('Lifestyle');
   const [pocketDate, setPocketDate] = useState('');
   const [pocketIcon, setPocketIcon] = useState('flight_takeoff');
@@ -106,7 +106,7 @@ export default function PocketsView({
     // Reset Form
     setPocketName('');
     setPocketTarget('');
-    setPocketCurrent('0');
+    setPocketCurrent('');
     setPocketCategory('Lifestyle');
     setPocketDate('');
     setPocketIcon('flight_takeoff');
