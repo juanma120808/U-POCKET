@@ -721,7 +721,7 @@ function App() {
                   onChange={(e) => setAdjInitialBalance(e.target.value)}
                   required
                 />
-                <p className="text-[11px] text-on-surface-variant mt-sm">Monto asignado total para tu periodo de gastos.</p>
+                <p className="text-[11px] text-on-surface-variant mt-sm">Monto asignado total para tu semana de gastos.</p>
               </div>
 
               <div>

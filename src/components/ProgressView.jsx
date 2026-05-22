@@ -54,7 +54,7 @@ export default function ProgressView({
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-md pb-base border-b border-outline-variant/20">
         <div>
           <h2 className="font-headline-lg text-[28px] md:text-headline-lg font-bold text-on-surface tracking-tight">Estadísticas y Progreso</h2>
-          <p className="font-body-lg text-body-lg text-on-surface-variant">Análisis detallado de tu salud financiera este trimestre.</p>
+          <p className="font-body-lg text-body-lg text-on-surface-variant">Análisis detallado de tu salud financiera esta semana.</p>
         </div>
         <button 
           onClick={onBack}
@@ -68,13 +68,13 @@ export default function ProgressView({
       {/* Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
         
-        {/* Comparativa Mensual (Bento Card Large - span 2) */}
+        {/* Comparativa Semanal (Bento Card Large - span 2) */}
         <section className="lg:col-span-2 glass-card p-lg border border-outline-variant/20 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-start mb-xl">
               <div>
-                <h3 className="font-headline-md text-headline-md font-semibold text-on-surface">Comparativa Mensual</h3>
-                <p className="font-body-md text-body-md text-on-surface-variant">Gastos reales vs Presupuesto asignado semanal/mensual</p>
+                <h3 className="font-headline-md text-headline-md font-semibold text-on-surface">Comparativa Semanal</h3>
+                <p className="font-body-md text-body-md text-on-surface-variant">Gastos reales vs Presupuesto asignado semanal</p>
               </div>
               <div className="flex gap-sm">
                 <span className="flex items-center gap-xs font-label-md text-label-md text-on-surface-variant">
@@ -101,7 +101,7 @@ export default function ProgressView({
                     <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
                     <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[60%] hover:brightness-110 transition-all" title="Gastado: $1,800"></div>
                   </div>
-                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Ene</span>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Sem 1</span>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center gap-sm group">
@@ -109,7 +109,7 @@ export default function ProgressView({
                     <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
                     <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[50%] hover:brightness-110 transition-all" title="Gastado: $1,420"></div>
                   </div>
-                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Feb</span>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Sem 2</span>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center gap-sm group">
@@ -117,7 +117,7 @@ export default function ProgressView({
                     <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
                     <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[82%] hover:brightness-110 transition-all" title="Gastado: $2,350 (Sobre presupuesto)"></div>
                   </div>
-                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Mar</span>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Sem 3</span>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center gap-sm group">
@@ -125,7 +125,7 @@ export default function ProgressView({
                     <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
                     <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[40%] hover:brightness-110 transition-all" title="Gastado: $1,150"></div>
                   </div>
-                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Abr</span>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Sem 4</span>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center gap-sm group">
@@ -133,7 +133,7 @@ export default function ProgressView({
                     <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
                     <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[65%] hover:brightness-110 transition-all" title="Gastado: $1,850"></div>
                   </div>
-                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">May</span>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Sem 5</span>
                 </div>
 
                 {/* Current dynamic month (Jun) */}
@@ -145,10 +145,10 @@ export default function ProgressView({
                         isCritical ? 'bg-error shadow-[0_0_10px_rgba(255,180,171,0.4)]' : 'bg-primary shadow-[0_0_10px_rgba(208,188,255,0.4)]'
                       }`}
                       style={{ height: `${Math.max(8, junRatio)}%` }} 
-                      title={`Gastado Actual (Jun): ${formatMoney(junRealVal)}`}
+                      title={`Gastado Actual (Semana Act.): ${formatMoney(junRealVal)}`}
                     ></div>
                   </div>
-                  <span className="font-label-md text-label-md text-on-surface font-bold text-[11px] underline">Jun (Act)</span>
+                  <span className="font-label-md text-label-md text-on-surface font-bold text-[11px] underline">Sem 6 (Act)</span>
                 </div>
               </div>
             </div>
@@ -157,7 +157,7 @@ export default function ProgressView({
 
         {/* Donut Chart Category Breakdown (Bento Card Small - span 1) */}
         <section className="glass-card p-lg border border-outline-variant/20 flex flex-col">
-          <h3 className="font-headline-md text-headline-md font-semibold text-on-surface mb-lg">Distribución Trimestre</h3>
+          <h3 className="font-headline-md text-headline-md font-semibold text-on-surface mb-lg">Distribución Semanal</h3>
           
           <div className="flex-1 flex items-center justify-center relative py-md">
             {totalSpent > 0 ? (
@@ -220,7 +220,7 @@ export default function ProgressView({
               <span className="font-mono text-headline-lg text-on-surface font-bold">
                 {totalSpent > 1000 ? `${(totalSpent / 1000).toFixed(1)}k` : `$${totalSpent.toFixed(0)}`}
               </span>
-              <span className="font-label-md text-label-md text-on-surface-variant font-bold">Total Mes</span>
+              <span className="font-label-md text-label-md text-on-surface-variant font-bold">Total Semana</span>
             </div>
           </div>
 

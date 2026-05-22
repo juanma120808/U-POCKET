@@ -168,7 +168,7 @@ export default function HistoryView({ expenses, addExpense, openTxModal }) {
             className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-xs px-sm text-body-md text-on-surface"
           >
             <option value="30">Últimos 30 Días</option>
-            <option value="90">Últimos 3 Meses</option>
+            <option value="90">Últimas 12 Semanas</option>
             <option value="365">Este Año</option>
             <option value="All">Histórico Completo</option>
           </select>

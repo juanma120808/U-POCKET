@@ -172,7 +172,7 @@ export default function Dashboard({
                     <tr>
                       <td colSpan="4" className="px-lg py-12 text-center text-on-surface-variant font-body-md">
                         <span className="material-symbols-outlined text-[36px] text-on-surface-variant/40 block mb-sm">database</span>
-                        No hay gastos registrados en este periodo.
+                        No hay gastos registrados en esta semana.
                       </td>
                     </tr>
                   )}

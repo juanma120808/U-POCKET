@@ -609,7 +609,7 @@ export default function Onboarding({ onComplete }) {
                 <div className="space-y-xs">
                   <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-xs">
                     <span className="material-symbols-outlined text-primary text-[16px]">account_balance_wallet</span>
-                    Ingresos del Periodo ($)
+                    Ingresos de la Semana ($)
                   </label>
                   <input 
                     type="number" 
@@ -619,7 +619,7 @@ export default function Onboarding({ onComplete }) {
                     onChange={(e) => setBalance(e.target.value)}
                     required
                   />
-                  <p className="text-[10px] text-on-surface-variant/70 leading-relaxed">Saldo total inicial asignado para tus gastos.</p>
+                  <p className="text-[10px] text-on-surface-variant/70 leading-relaxed">Saldo inicial asignado para tus gastos de la semana.</p>
                 </div>
 
                 <div className="space-y-xs">
