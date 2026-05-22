@@ -81,68 +81,70 @@ export default function ProgressView({
               </div>
             </div>
             
-            <div className="h-[280px] flex items-end justify-between gap-sm md:gap-md px-md pb-xl relative mt-lg">
-              {/* Background Grid Lines */}
-              <div className="absolute inset-0 flex flex-col justify-between border-b border-outline-variant/10 py-md pointer-events-none">
-                <div className="border-b border-outline-variant/10 w-full"></div>
-                <div className="border-b border-outline-variant/10 w-full"></div>
-                <div className="border-b border-outline-variant/10 w-full"></div>
-              </div>
-
-              {/* Bar Groups */}
-              <div className="flex-1 flex flex-col items-center gap-sm group">
-                <div className="w-full flex items-end justify-center gap-xs h-full relative">
-                  <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
-                  <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[60%] hover:brightness-110 transition-all" title="Gastado: $1,800"></div>
+            <div className="overflow-x-auto custom-scrollbar -mx-lg px-lg">
+              <div className="min-w-[500px] md:min-w-0 h-[280px] flex items-end justify-between gap-sm md:gap-md px-md pb-xl relative mt-lg">
+                {/* Background Grid Lines */}
+                <div className="absolute inset-0 flex flex-col justify-between border-b border-outline-variant/10 py-md pointer-events-none">
+                  <div className="border-b border-outline-variant/10 w-full"></div>
+                  <div className="border-b border-outline-variant/10 w-full"></div>
+                  <div className="border-b border-outline-variant/10 w-full"></div>
                 </div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Ene</span>
-              </div>
 
-              <div className="flex-1 flex flex-col items-center gap-sm group">
-                <div className="w-full flex items-end justify-center gap-xs h-full">
-                  <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
-                  <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[50%] hover:brightness-110 transition-all" title="Gastado: $1,420"></div>
+                {/* Bar Groups */}
+                <div className="flex-1 flex flex-col items-center gap-sm group">
+                  <div className="w-full flex items-end justify-center gap-xs h-full relative">
+                    <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
+                    <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[60%] hover:brightness-110 transition-all" title="Gastado: $1,800"></div>
+                  </div>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Ene</span>
                 </div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Feb</span>
-              </div>
 
-              <div className="flex-1 flex flex-col items-center gap-sm group">
-                <div className="w-full flex items-end justify-center gap-xs h-full">
-                  <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
-                  <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[82%] hover:brightness-110 transition-all" title="Gastado: $2,350 (Sobre presupuesto)"></div>
+                <div className="flex-1 flex flex-col items-center gap-sm group">
+                  <div className="w-full flex items-end justify-center gap-xs h-full">
+                    <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
+                    <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[50%] hover:brightness-110 transition-all" title="Gastado: $1,420"></div>
+                  </div>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Feb</span>
                 </div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Mar</span>
-              </div>
 
-              <div className="flex-1 flex flex-col items-center gap-sm group">
-                <div className="w-full flex items-end justify-center gap-xs h-full">
-                  <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
-                  <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[40%] hover:brightness-110 transition-all" title="Gastado: $1,150"></div>
+                <div className="flex-1 flex flex-col items-center gap-sm group">
+                  <div className="w-full flex items-end justify-center gap-xs h-full">
+                    <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
+                    <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[82%] hover:brightness-110 transition-all" title="Gastado: $2,350 (Sobre presupuesto)"></div>
+                  </div>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Mar</span>
                 </div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Abr</span>
-              </div>
 
-              <div className="flex-1 flex flex-col items-center gap-sm group">
-                <div className="w-full flex items-end justify-center gap-xs h-full">
-                  <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
-                  <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[65%] hover:brightness-110 transition-all" title="Gastado: $1,850"></div>
+                <div className="flex-1 flex flex-col items-center gap-sm group">
+                  <div className="w-full flex items-end justify-center gap-xs h-full">
+                    <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
+                    <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[40%] hover:brightness-110 transition-all" title="Gastado: $1,150"></div>
+                  </div>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">Abr</span>
                 </div>
-                <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">May</span>
-              </div>
 
-              {/* Current dynamic month (Jun) */}
-              <div className="flex-1 flex flex-col items-center gap-sm group">
-                <div className="w-full flex items-end justify-center gap-xs h-full">
-                  <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title={`Presupuesto Inicial: ${formatMoney(junMetaVal)}`}></div>
-                  <div 
-                    className={`w-6 md:w-8 rounded-t-sm hover:brightness-110 transition-all ${
-                      isCritical ? 'bg-error shadow-[0_0_10px_rgba(255,180,171,0.4)]' : 'bg-primary shadow-[0_0_10px_rgba(208,188,255,0.4)]'
-                    }`}
-                    style={{ height: `${Math.max(8, junRatio)}%` }} 
-                    title={`Gastado Actual (Jun): ${formatMoney(junRealVal)}`}
-                  ></div>
+                <div className="flex-1 flex flex-col items-center gap-sm group">
+                  <div className="w-full flex items-end justify-center gap-xs h-full">
+                    <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title="Presupuesto: $2,000"></div>
+                    <div className="w-6 md:w-8 bg-primary-container rounded-t-sm h-[65%] hover:brightness-110 transition-all" title="Gastado: $1,850"></div>
+                  </div>
+                  <span className="font-label-md text-label-md text-on-surface-variant text-[11px]">May</span>
                 </div>
-                <span className="font-label-md text-label-md text-on-surface font-bold text-[11px] underline">Jun (Act)</span>
+
+                {/* Current dynamic month (Jun) */}
+                <div className="flex-1 flex flex-col items-center gap-sm group">
+                  <div className="w-full flex items-end justify-center gap-xs h-full">
+                    <div className="w-3 md:w-4 bg-surface-variant rounded-t-sm h-[70%]" title={`Presupuesto Inicial: ${formatMoney(junMetaVal)}`}></div>
+                    <div 
+                      className={`w-6 md:w-8 rounded-t-sm hover:brightness-110 transition-all ${
+                        isCritical ? 'bg-error shadow-[0_0_10px_rgba(255,180,171,0.4)]' : 'bg-primary shadow-[0_0_10px_rgba(208,188,255,0.4)]'
+                      }`}
+                      style={{ height: `${Math.max(8, junRatio)}%` }} 
+                      title={`Gastado Actual (Jun): ${formatMoney(junRealVal)}`}
+                    ></div>
+                  </div>
+                  <span className="font-label-md text-label-md text-on-surface font-bold text-[11px] underline">Jun (Act)</span>
+                </div>
               </div>
             </div>
           </div>

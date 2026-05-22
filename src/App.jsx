@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import HistoryView from './components/HistoryView';
 import ProgressView from './components/ProgressView';
 import PocketsView from './components/PocketsView';
+import { db } from './services/db';
 import './index.css';
 
 // Initial Mock Pockets for high-fidelity seeding
@@ -46,77 +47,80 @@ function App() {
 
   // Initial Load
   useEffect(() => {
-    const savedProfile = localStorage.getItem('upocket_profile');
-    const savedExpenses = localStorage.getItem('upocket_expenses');
-    const savedPockets = localStorage.getItem('upocket_pockets');
-    const savedTheme = localStorage.getItem('upocket_theme');
+    const init = async () => {
+      try {
+        const activeEmail = localStorage.getItem('upocket_active_user_email');
+        const savedTheme = localStorage.getItem('upocket_theme');
 
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.className = savedTheme;
-    } else {
-      document.documentElement.className = 'dark';
-    }
+        if (savedTheme) {
+          setTheme(savedTheme);
+          document.documentElement.className = savedTheme;
+        } else {
+          document.documentElement.className = 'dark';
+        }
 
-    if (savedProfile) {
-      setUserProfile(JSON.parse(savedProfile));
-      
-      if (savedExpenses) {
-        setExpenses(JSON.parse(savedExpenses));
-      } else {
-        // Seeding some high-fidelity starting transactions
-        const initialMockTxs = [
-          { name: 'Supermercado Central', amount: 124.50, type: 'Fixed', date: new Date(Date.now() - 3600000 * 24).toISOString(), details: 'Daily Groceries' },
-          { name: 'Cinepolis Premium', amount: 45.00, type: 'Leisure', date: new Date(Date.now() - 3600000 * 48).toISOString(), details: 'Entertainment' },
-          { name: 'Starbucks Coffee', amount: 12.80, type: 'Minor', date: new Date(Date.now() - 3600000 * 60).toISOString(), details: 'Personal Treat' }
-        ];
-        setExpenses(initialMockTxs);
-        localStorage.setItem('upocket_expenses', JSON.stringify(initialMockTxs));
+        if (activeEmail) {
+          const allUsers = await db.getUsers();
+          const activeUser = allUsers.find(u => u.email.toLowerCase() === activeEmail.toLowerCase());
+          if (activeUser) {
+            setUserProfile(activeUser);
+            
+            // Load user-specific expenses and pockets from db
+            const exps = await db.getExpenses(activeEmail);
+            setExpenses(exps);
+            
+            const pock = await db.getPockets(activeEmail);
+            setPockets(pock.length > 0 ? pock : DEFAULT_POCKETS);
+            
+            if (activeUser.theme) {
+              setTheme(activeUser.theme);
+              document.documentElement.className = activeUser.theme;
+            }
+            
+            setCurrentView('onboarding'); // Go to lockscreen to ask password
+            return;
+          }
+        }
+        setCurrentView('onboarding');
+      } catch (err) {
+        console.error("Error al inicializar U-Pocket:", err);
+        setCurrentView('onboarding');
       }
-
-      if (savedPockets) {
-        setPockets(JSON.parse(savedPockets));
-      } else {
-        setPockets(DEFAULT_POCKETS);
-        localStorage.setItem('upocket_pockets', JSON.stringify(DEFAULT_POCKETS));
-      }
-      
-      setCurrentView('onboarding'); // Lockscreen / login automatically triggers if profile is present
-    } else {
-      setCurrentView('onboarding');
-    }
+    };
+    init();
   }, []);
 
-  const changeTheme = (newTheme) => {
+  const changeTheme = async (newTheme) => {
     setTheme(newTheme);
     document.documentElement.className = newTheme;
     localStorage.setItem('upocket_theme', newTheme);
+    if (userProfile) {
+      const updated = { ...userProfile, theme: newTheme };
+      await db.updateUserProfile(userProfile.email, updated);
+      setUserProfile(updated);
+    }
   };
 
-  const handleOnboardingComplete = (profile, initialPockets, isUnlock) => {
+  const handleOnboardingComplete = async (profile, initialPockets, isUnlock) => {
     setUserProfile(profile);
-    localStorage.setItem('upocket_profile', JSON.stringify(profile));
     
     if (isUnlock) {
-      // Just unlocking lockscreen! Load saved expenses and pockets.
-      const savedExpenses = localStorage.getItem('upocket_expenses');
-      if (savedExpenses) {
-        setExpenses(JSON.parse(savedExpenses));
-      } else {
-        setExpenses([]);
-      }
+      // Just unlocking! Load saved expenses and pockets for this specific user
+      const exps = await db.getExpenses(profile.email);
+      setExpenses(exps);
 
-      const savedPockets = localStorage.getItem('upocket_pockets');
-      if (savedPockets) {
-        setPockets(JSON.parse(savedPockets));
-      } else {
-        setPockets(DEFAULT_POCKETS);
+      const pock = await db.getPockets(profile.email);
+      setPockets(pock.length > 0 ? pock : DEFAULT_POCKETS);
+      
+      if (profile.theme) {
+        setTheme(profile.theme);
+        document.documentElement.className = profile.theme;
       }
     } else {
       // Fresh wizard onboarding! Save chosen starting pockets
       const finalPockets = initialPockets && initialPockets.length > 0 ? initialPockets : DEFAULT_POCKETS;
       setPockets(finalPockets);
-      localStorage.setItem('upocket_pockets', JSON.stringify(finalPockets));
+      await db.savePockets(profile.email, finalPockets);
 
       // Seeding starting pocket funding transactions
       const seedExpenses = [];
@@ -133,30 +137,38 @@ function App() {
       });
 
       setExpenses(seedExpenses);
-      localStorage.setItem('upocket_expenses', JSON.stringify(seedExpenses));
+      
+      // Save all seed expenses sequentially
+      for (const exp of seedExpenses) {
+        await db.saveExpense(profile.email, exp);
+      }
     }
 
     setCurrentView('main');
   };
 
-  const handleAddExpense = (expense) => {
-    const updatedExpenses = [expense, ...expenses];
-    setExpenses(updatedExpenses);
-    localStorage.setItem('upocket_expenses', JSON.stringify(updatedExpenses));
+  const handleAddExpense = async (expense) => {
+    if (!userProfile) return;
+    const updated = await db.saveExpense(userProfile.email, expense);
+    setExpenses(updated);
   };
 
-  const handleSavePocket = (updatedPockets) => {
-    setPockets(updatedPockets);
-    localStorage.setItem('upocket_pockets', JSON.stringify(updatedPockets));
+  const handleSavePocket = async (updatedPockets) => {
+    if (!userProfile) return;
+    const updated = await db.savePockets(userProfile.email, updatedPockets);
+    setPockets(updated);
   };
 
-  const handleUpdateUserProfile = (updatedProfile) => {
+  const handleUpdateUserProfile = async (updatedProfile) => {
+    if (!userProfile) return;
+    await db.updateUserProfile(userProfile.email, updatedProfile);
     setUserProfile(updatedProfile);
-    localStorage.setItem('upocket_profile', JSON.stringify(updatedProfile));
   };
 
   const handleLogout = () => {
     if (confirm('¿Deseas cerrar sesión? Volverás a la pantalla de bloqueo.')) {
+      localStorage.removeItem('upocket_active_user_email');
+      setUserProfile(null);
       setCurrentView('onboarding');
     }
   };
@@ -431,14 +443,18 @@ function App() {
       <div className="flex-1 flex flex-col md:ml-[240px] min-h-screen">
         
         {/* Top Navbar */}
-        <header className="sticky top-0 z-40 flex justify-between items-center w-full h-16 px-lg bg-surface/70 backdrop-blur-xl border-b border-outline-variant/20">
-          <div className="flex items-center gap-md flex-1">
+        <header className="sticky top-0 z-40 flex justify-between items-center w-full h-16 px-lg bg-surface/70 backdrop-blur-xl border-b border-outline-variant/20 gap-md">
+          <div className="flex items-center gap-md flex-1 min-w-0">
             {/* Mobile Hamburger menu */}
-            <button className="md:hidden text-on-surface-variant hover:text-on-surface p-1" onClick={() => setMobileMenuOpen(true)}>
+            <button className="md:hidden text-on-surface-variant hover:text-on-surface p-1 shrink-0" onClick={() => setMobileMenuOpen(true)}>
               <span className="material-symbols-outlined text-[24px]">menu</span>
             </button>
             
-            <div className="flex items-center gap-md bg-surface-container-low px-md py-xs rounded-full border border-outline-variant/10 w-full max-w-xs md:max-w-md">
+            {/* Mobile Brand Title */}
+            <span className="font-bold text-primary font-headline-md tracking-tight md:hidden shrink-0">U-Pocket</span>
+            
+            {/* Desktop-only Search Bar (Hidden on Mobile) */}
+            <div className="hidden md:flex items-center gap-md bg-surface-container-low px-md py-xs rounded-full border border-outline-variant/10 w-full max-w-xs md:max-w-md">
               <span className="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
               <input 
                 className="bg-transparent border-none focus:ring-0 text-body-md w-full placeholder:text-on-surface-variant/50 p-0 text-on-surface" 
@@ -448,7 +464,23 @@ function App() {
             </div>
           </div>
           
-          <div className="flex items-center gap-lg">
+          <div className="flex items-center gap-md sm:gap-lg shrink-0">
+            {/* Premium Database Sync Status Badge */}
+            <div 
+              onClick={() => setCurrentView('onboarding')}
+              className={`flex items-center gap-xs px-2.5 py-1 bg-surface-container-low border rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                db.isCloudActive() 
+                  ? 'border-green-500/30 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' 
+                  : 'border-outline-variant/20 text-on-surface-variant'
+              }`}
+              title={db.isCloudActive() ? "Sincronizado en la Nube con Supabase" : "Trabajando en Base de Datos Local"}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${db.isCloudActive() ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`}></span>
+              <span className="hidden xs:inline">
+                {db.isCloudActive() ? 'Cloud DB' : 'Local DB'}
+              </span>
+            </div>
+
             {/* Dynamic Premium Theme Selector */}
             <div className="flex gap-sm items-center bg-surface-container-low px-sm py-1 rounded-full border border-outline-variant/10">
               <button 
@@ -696,7 +728,7 @@ function App() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Gastos Fijos Planificados ($)</label>
                 <input 
                   type="number" 
-                  className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md font-mono text-body-md text-on-surface font-semibold"
+                  className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm pl-md pr-md text-body-md font-mono text-on-surface font-semibold placeholder:text-on-surface-variant/30" 
                   placeholder="0.00" 
                   value={adjFixedExpenses}
                   onChange={(e) => setAdjFixedExpenses(e.target.value)}
