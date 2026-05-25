@@ -22,7 +22,7 @@ function App() {
   const [expenses, setExpenses] = useState([]);
   const [pockets, setPockets] = useState([]);
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, history, pockets, progress
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Modals state
@@ -64,7 +64,8 @@ function App() {
           setTheme(savedTheme);
           document.documentElement.className = savedTheme;
         } else {
-          document.documentElement.className = 'dark';
+          setTheme('light');
+          document.documentElement.className = 'light';
         }
 
         if (activeEmail) {

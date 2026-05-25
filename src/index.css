@@ -1,53 +1,53 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap');
 
 :root, .dark {
-  --surface-container-lowest: #0e0e0e;
-  --secondary-fixed-dim: #b7c8e1;
-  --surface-dim: #131313;
-  --surface-tint: #d0bcff;
-  --inverse-primary: #6d3bd7;
-  --error-container: #93000a;
-  --primary: #d0bcff;
-  --error: #ffb4ab;
-  --tertiary-fixed: #acedff;
-  --outline: #958ea0;
-  --surface-container: #201f1f;
-  --surface-variant: #353534;
-  --inverse-surface: #e5e2e1;
-  --on-error: #690005;
-  --on-background: #e5e2e1;
-  --on-tertiary: #003640;
-  --tertiary-fixed-dim: #4cd7f6;
-  --outline-variant: #494454;
-  --on-error-container: #ffdad6;
-  --on-secondary-fixed: #0b1c30;
-  --secondary: #b7c8e1;
-  --secondary-container: #3a4a5f;
-  --surface-bright: #3a3939;
-  --on-primary-fixed-variant: #5516be;
-  --tertiary-container: #009eb9;
-  --primary-container: #a078ff;
-  --primary-fixed-dim: #d0bcff;
-  --on-surface: #e5e2e1;
-  --on-secondary: #213145;
-  --on-primary-fixed: #23005c;
-  --on-tertiary-container: #002f38;
-  --surface-container-high: #2a2a2a;
-  --surface: #131313;
-  --background: #0A0A0A;
-  --on-primary: #3c0091;
-  --on-tertiary-fixed-variant: #004e5c;
-  --surface-container-highest: #353534;
-  --secondary-fixed: #d3e4fe;
-  --primary-fixed: #e9ddff;
-  --on-secondary-container: #a9bad3;
-  --inverse-on-surface: #313030;
-  --on-primary-container: #340080;
-  --on-surface-variant: #cbc3d7;
-  --tertiary: #4cd7f6;
-  --surface-container-low: #1c1b1b;
-  --on-secondary-fixed-variant: #38485d;
-  --on-tertiary-fixed: #001f26;
+  --surface-container-lowest: #010207;
+  --secondary-fixed-dim: #94a3b8;
+  --surface-dim: #040714;
+  --surface-tint: #818cf8;
+  --inverse-primary: #4f46e5;
+  --error-container: #7f1d1d;
+  --primary: #818cf8;
+  --error: #f87171;
+  --tertiary-fixed: #064e3b;
+  --outline: #1e293b;
+  --surface-container: #080f24;
+  --surface-variant: #0f172a;
+  --inverse-surface: #f1f5f9;
+  --on-error: #ffffff;
+  --on-background: #f8fafc;
+  --on-tertiary: #020617;
+  --tertiary-fixed-dim: #34d399;
+  --outline-variant: #334155;
+  --on-error-container: #fee2e2;
+  --on-secondary-fixed: #ffffff;
+  --secondary: #94a3b8;
+  --secondary-container: #1e293b;
+  --surface-bright: #111a36;
+  --on-primary-fixed-variant: #312e81;
+  --tertiary-container: #065f46;
+  --primary-container: #3b82f6;
+  --primary-fixed-dim: #818cf8;
+  --on-surface: #f1f5f9;
+  --on-secondary: #0f172a;
+  --on-primary-fixed: #ffffff;
+  --on-tertiary-container: #a7f3d0;
+  --surface-container-high: #0c1430;
+  --surface: #060b1e;
+  --background: #02040a;
+  --on-primary: #020617;
+  --on-tertiary-fixed-variant: #34d399;
+  --surface-container-highest: #131f44;
+  --secondary-fixed: #cbd5e1;
+  --primary-fixed: #e0e7ff;
+  --on-secondary-container: #cbd5e1;
+  --inverse-on-surface: #0f172a;
+  --on-primary-container: #ffffff;
+  --on-surface-variant: #94a3b8;
+  --tertiary: #10b981;
+  --surface-container-low: #04081b;
+  --on-secondary-fixed-variant: #94a3b8;
+  --on-tertiary-fixed: #ffffff;
 }
 
 .light {
@@ -319,4 +319,48 @@ input:focus, select:focus, textarea:focus {
 .custom .custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(0, 255, 204, 0.2);
 }
+
+/* Renewed Dark Theme (DeFi Space Glass) Styling Overrides */
+.dark .glass-card {
+    background: rgba(6, 11, 30, 0.65);
+    border: 1px solid rgba(129, 140, 248, 0.15);
+    border-top-color: rgba(129, 140, 248, 0.25);
+    box-shadow: 0 8px 32px 0 rgba(1, 2, 7, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+.dark .glass-card:hover {
+    border-color: rgba(129, 140, 248, 0.4);
+    background: rgba(11, 19, 48, 0.8);
+    box-shadow: 0 8px 32px 0 rgba(129, 140, 248, 0.08);
+}
+.dark .glass-panel {
+    background: rgba(6, 11, 30, 0.75);
+    border: 1px solid rgba(129, 140, 248, 0.15);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+.dark input, .dark select, .dark textarea {
+    background-color: #030612 !important;
+    border-color: rgba(129, 140, 248, 0.25) !important;
+    color: #f8fafc !important;
+}
+.dark input:focus, .dark select:focus, .dark textarea:focus {
+    border-color: #818cf8 !important;
+    box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.3) !important;
+}
+.dark input::placeholder, .dark select::placeholder, .dark textarea::placeholder {
+    color: rgba(148, 163, 184, 0.5) !important;
+}
+.dark ::-webkit-scrollbar-track {
+    background: #010207;
+}
+.dark ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(129, 140, 248, 0.2);
+}
+
 

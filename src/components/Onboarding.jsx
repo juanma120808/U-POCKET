@@ -210,7 +210,7 @@ export default function Onboarding({ onComplete }) {
       fixedExpensesList: validFixedList,
       fixedExpenses: totalFixed,
       savingGoal: db.parseFormattedMoney(savingGoal) || 0,
-      theme: 'dark'
+      theme: 'light'
     };
 
     const initialPockets = activePockets
