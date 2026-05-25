@@ -137,8 +137,8 @@ export default function Dashboard({
                         labelText = 'Ocio';
                       } else if (tx.type === 'Minor') {
                         iconName = 'coffee';
-                        catColor = 'outline';
-                        iconColor = 'text-outline';
+                        catColor = 'secondary';
+                        iconColor = 'text-secondary';
                         labelText = 'Hormiga';
                       }
 

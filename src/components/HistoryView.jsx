@@ -236,8 +236,8 @@ export default function HistoryView({ expenses, addExpense, openTxModal, onEditE
                     labelText = 'Ocio';
                   } else if (tx.type === 'Minor') {
                     iconName = 'coffee';
-                    catColor = 'outline';
-                    iconColor = 'text-outline';
+                    catColor = 'secondary';
+                    iconColor = 'text-secondary';
                     labelText = 'Hormiga';
                   }
 

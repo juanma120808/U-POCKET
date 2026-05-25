@@ -55,7 +55,7 @@ export default function PocketsView({
       case 'futuro':
         return { text: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' };
       case 'mantenimiento':
-        return { text: 'text-outline', bg: 'bg-outline/10', border: 'border-outline/20' };
+        return { text: 'text-secondary', bg: 'bg-secondary/10', border: 'border-secondary/20' };
       default:
         return { text: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20' };
     }

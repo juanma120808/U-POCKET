@@ -81,10 +81,16 @@ function App() {
             const pock = await db.getPockets(activeEmail);
             setPockets(pock.length > 0 ? pock : DEFAULT_POCKETS);
             
-            if (activeUser.theme) {
-              setTheme(activeUser.theme);
-              document.documentElement.className = activeUser.theme;
+            let finalTheme = savedTheme;
+            if (!finalTheme) {
+              finalTheme = 'light';
+              if (activeUser.theme === 'dark') {
+                activeUser.theme = 'light';
+                await db.updateUserProfile(activeUser.email, activeUser);
+              }
             }
+            setTheme(finalTheme);
+            document.documentElement.className = finalTheme;
             
             setCurrentView('onboarding'); // Go to lockscreen to ask password
             return;
@@ -122,8 +128,17 @@ function App() {
       setPockets(pock.length > 0 ? pock : DEFAULT_POCKETS);
       
       if (profile.theme) {
-        setTheme(profile.theme);
-        document.documentElement.className = profile.theme;
+        const savedTheme = localStorage.getItem('upocket_theme');
+        let finalTheme = savedTheme;
+        if (!finalTheme) {
+          finalTheme = 'light';
+          if (profile.theme === 'dark') {
+            profile.theme = 'light';
+            await db.updateUserProfile(profile.email, profile);
+          }
+        }
+        setTheme(finalTheme);
+        document.documentElement.className = finalTheme;
       }
     } else {
       // Fresh wizard onboarding! Save chosen starting pockets
