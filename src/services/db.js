@@ -223,6 +223,69 @@ export const db = {
     return updatedLocal;
   },
 
+  updateExpense: async (email, updatedExpense) => {
+    // 1. Save Locally
+    const key = `upocket_expenses_${email.toLowerCase()}`;
+    const localExps = db.getLocalExpenses(email);
+    const updatedLocal = localExps.map(e => {
+      if ((updatedExpense.id && e.id === updatedExpense.id) || (e.date === updatedExpense.date)) {
+        return { ...e, ...updatedExpense };
+      }
+      return e;
+    });
+    localStorage.setItem(key, JSON.stringify(updatedLocal));
+
+    // 2. Cloud Mode Sync
+    if (supabase) {
+      let query = supabase.from('upocket_expenses').update({
+        name: updatedExpense.name,
+        amount: updatedExpense.amount,
+        type: updatedExpense.type,
+        details: updatedExpense.details,
+        date: updatedExpense.date
+      });
+      if (updatedExpense.id) {
+        query = query.eq('id', updatedExpense.id);
+      } else {
+        query = query.eq('user_email', email.toLowerCase()).eq('date', updatedExpense.date);
+      }
+      const { error } = await query;
+      if (error) {
+        console.error('Error actualizando gasto en Supabase:', error);
+        throw error;
+      }
+    }
+    return updatedLocal;
+  },
+
+  deleteExpense: async (email, expenseToDelete) => {
+    // 1. Save Locally
+    const key = `upocket_expenses_${email.toLowerCase()}`;
+    const localExps = db.getLocalExpenses(email);
+    const updatedLocal = localExps.filter(e => {
+      if (expenseToDelete.id && e.id === expenseToDelete.id) return false;
+      if (e.date === expenseToDelete.date) return false;
+      return true;
+    });
+    localStorage.setItem(key, JSON.stringify(updatedLocal));
+
+    // 2. Cloud Mode Sync
+    if (supabase) {
+      let query = supabase.from('upocket_expenses').delete();
+      if (expenseToDelete.id) {
+        query = query.eq('id', expenseToDelete.id);
+      } else {
+        query = query.eq('user_email', email.toLowerCase()).eq('date', expenseToDelete.date);
+      }
+      const { error } = await query;
+      if (error) {
+        console.error('Error eliminando gasto en Supabase:', error);
+        throw error;
+      }
+    }
+    return updatedLocal;
+  },
+
   // ==========================================
   // POCKETS MANAGEMENT
   // ==========================================
@@ -372,5 +435,53 @@ export const db = {
       }
     }
     console.log('Sincronización local completa con Supabase.');
+  },
+
+  normalizeAndFormat: (val) => {
+    if (val === null || val === undefined) return '';
+    let str = String(val);
+    
+    const isNegative = str.startsWith('-');
+    if (isNegative) {
+      str = str.slice(1);
+    }
+    
+    // Check if there is a decimal indicator (ending dot or comma)
+    const endsWithSeparator = str.endsWith('.') || str.endsWith(',');
+    
+    // Convert ending dot to comma
+    if (str.endsWith('.')) {
+      str = str.slice(0, -1) + ',';
+    }
+    
+    // Strip all dots
+    str = str.replace(/\./g, '');
+    
+    // Split into integer and decimal parts
+    const parts = str.split(',');
+    
+    // Extract only digits from the parts
+    let integerPart = parts[0].replace(/\D/g, '');
+    let decimalPart = parts.length > 1 ? parts[1].replace(/\D/g, '').slice(0, 2) : null;
+    
+    // Add thousand dots to integer part
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    let result = integerPart;
+    if (decimalPart !== null) {
+      result = `${integerPart},${decimalPart}`;
+    } else if (endsWithSeparator) {
+      result = `${integerPart},`;
+    }
+    
+    return isNegative && result ? `-${result}` : result;
+  },
+
+  parseFormattedMoney: (val) => {
+    if (!val) return 0;
+    // Strip all thousand dots, and replace decimal comma with dot
+    const clean = String(val).replace(/\./g, '').replace(',', '.');
+    const parsed = parseFloat(clean);
+    return isNaN(parsed) ? 0 : parsed;
   }
 };

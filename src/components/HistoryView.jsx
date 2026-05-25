@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { db } from '../services/db';
 
-export default function HistoryView({ expenses, addExpense, openTxModal }) {
+export default function HistoryView({ expenses, addExpense, openTxModal, onEditExpense }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All'); // All, Fixed, Leisure, Minor
   const [dateFilter, setDateFilter] = useState('30'); // 30, 90, 365, All
@@ -32,7 +33,7 @@ export default function HistoryView({ expenses, addExpense, openTxModal }) {
     const matchesCategory = categoryFilter === 'All' ? true : type === categoryFilter;
 
     // Min Amount filter
-    const matchesMinAmount = minAmount === '' ? true : amount >= parseFloat(minAmount);
+    const matchesMinAmount = minAmount === '' ? true : amount >= db.parseFormattedMoney(minAmount);
 
     // Date filter
     let matchesDate = true;
@@ -195,10 +196,11 @@ export default function HistoryView({ expenses, addExpense, openTxModal }) {
           <div className="relative">
             <span className="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant font-mono text-body-md">$</span>
             <input 
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={minAmount}
-              onChange={(e) => { setMinAmount(e.target.value); setCurrentPage(1); }}
-              placeholder="0.00" 
+              onChange={(e) => { setMinAmount(db.normalizeAndFormat(e.target.value)); setCurrentPage(1); }}
+              placeholder="0,00" 
               className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-xs pl-md pr-sm text-body-md font-mono text-on-surface"
             />
           </div>
@@ -216,7 +218,7 @@ export default function HistoryView({ expenses, addExpense, openTxModal }) {
                 <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Transacción</th>
                 <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Categoría</th>
                 <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-widest text-right">Monto</th>
-                <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-widest text-center">Estado</th>
+                <th className="px-lg py-md font-label-md text-label-md text-on-surface-variant uppercase tracking-widest text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
@@ -240,7 +242,11 @@ export default function HistoryView({ expenses, addExpense, openTxModal }) {
                   }
 
                   return (
-                    <tr key={idx} className="row-hover hover:bg-white/[0.02] transition-all duration-150 cursor-pointer">
+                    <tr 
+                      key={idx} 
+                      onClick={() => onEditExpense && onEditExpense(tx)}
+                      className="row-hover hover:bg-white/[0.02] transition-all duration-150 cursor-pointer"
+                    >
                       <td className="px-lg py-md font-mono text-xs text-on-surface-variant">
                         {new Date(tx.date).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
@@ -264,9 +270,18 @@ export default function HistoryView({ expenses, addExpense, openTxModal }) {
                         -{formatMoney(tx.amount)}
                       </td>
                       <td className="px-lg py-md text-center">
-                        <div className="inline-flex items-center gap-xs px-sm py-xs bg-green-500/10 border border-green-500/30 rounded-full">
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                          <span className="text-[10px] font-bold text-green-500 uppercase">Liquidado</span>
+                        <div className="flex items-center justify-center gap-sm">
+                          <div className="inline-flex items-center gap-xs px-2.5 py-1 bg-green-500/10 border border-green-500/30 rounded-full">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            <span className="text-[10px] font-bold text-green-500 uppercase">Liquidado</span>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onEditExpense && onEditExpense(tx); }}
+                            className="p-1.5 rounded-full text-on-surface-variant hover:text-primary hover:bg-white/10 transition-colors flex items-center justify-center border border-outline-variant/10 active:scale-90"
+                            title="Editar Gasto"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
                         </div>
                       </td>
                     </tr>

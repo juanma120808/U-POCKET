@@ -169,16 +169,17 @@ export default function Onboarding({ onComplete }) {
       }
       setStep(2);
     } else if (step === 2) {
-      if (!balance || parseFloat(balance) <= 0) {
+      const parsedBalance = db.parseFormattedMoney(balance);
+      if (!balance || parsedBalance <= 0) {
         alert('Por favor ingresa un saldo inicial válido.');
         return;
       }
       const totalSeeds = activePockets
         .filter(p => p.checked)
-        .reduce((sum, p) => sum + (parseFloat(p.currentAmount) || 0), 0);
+        .reduce((sum, p) => sum + (db.parseFormattedMoney(p.currentAmount) || 0), 0);
 
-      if (totalSeeds > parseFloat(balance)) {
-        alert(`Tus fondos de ahorro semilla (${formatMoney(totalSeeds)}) no pueden exceder tus ingresos iniciales (${formatMoney(parseFloat(balance))}).`);
+      if (totalSeeds > parsedBalance) {
+        alert(`Tus fondos de ahorro semilla (${formatMoney(totalSeeds)}) no pueden exceder tus ingresos iniciales (${formatMoney(parsedBalance)}).`);
         return;
       }
       setStep(3);
@@ -192,19 +193,23 @@ export default function Onboarding({ onComplete }) {
   // Full onboarding wizard submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!balance) return;
+    const parsedBalance = db.parseFormattedMoney(balance);
+    if (!balance || parsedBalance <= 0) return;
 
-    const totalFixed = fixedExpenses.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
-    const validFixedList = fixedExpenses.filter(f => f.name && f.amount);
+    const totalFixed = fixedExpenses.reduce((acc, curr) => acc + (db.parseFormattedMoney(curr.amount) || 0), 0);
+    const validFixedList = fixedExpenses.filter(f => f.name && f.amount).map(f => ({
+      name: f.name,
+      amount: db.parseFormattedMoney(f.amount)
+    }));
 
     const profile = {
       name: name,
       email: email.toLowerCase(),
       password: password,
-      initialBalance: parseFloat(balance),
+      initialBalance: parsedBalance,
       fixedExpensesList: validFixedList,
       fixedExpenses: totalFixed,
-      savingGoal: parseFloat(savingGoal) || 0,
+      savingGoal: db.parseFormattedMoney(savingGoal) || 0,
       theme: 'dark'
     };
 
@@ -213,8 +218,8 @@ export default function Onboarding({ onComplete }) {
       .map(p => ({
         id: p.id,
         name: p.name,
-        targetAmount: parseFloat(p.targetAmount) || 0,
-        currentAmount: parseFloat(p.currentAmount) || 0,
+        targetAmount: db.parseFormattedMoney(p.targetAmount) || 0,
+        currentAmount: db.parseFormattedMoney(p.currentAmount) || 0,
         category: p.category,
         date: p.date,
         icon: p.icon
@@ -234,7 +239,7 @@ export default function Onboarding({ onComplete }) {
   // ==========================================
   if (showCloudConfig) {
     return (
-      <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-background px-lg py-xl relative overflow-hidden">
+      <div className="min-h-screen w-full max-w-full flex flex-col justify-center items-center bg-background px-md sm:px-lg py-md sm:py-xl relative overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-tertiary/5 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -329,7 +334,7 @@ export default function Onboarding({ onComplete }) {
   // ==========================================
   if (isLoginMode && users.length > 0) {
     return (
-      <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-background px-lg py-xl relative overflow-hidden">
+      <div className="min-h-screen w-full max-w-full flex flex-col justify-center items-center bg-background px-md sm:px-lg py-md sm:py-xl relative overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-tertiary/5 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -478,7 +483,7 @@ export default function Onboarding({ onComplete }) {
   // RENDER SIGN UP & ONBOARDING WIZARD
   // ==========================================
   return (
-    <div className="min-h-screen w-screen flex flex-col justify-center items-center bg-background px-lg py-xl relative overflow-hidden">
+    <div className="min-h-screen w-full max-w-full flex flex-col justify-center items-center bg-background px-md sm:px-lg py-md sm:py-xl relative overflow-hidden">
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-tertiary/5 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -612,11 +617,12 @@ export default function Onboarding({ onComplete }) {
                     Ingresos de la Semana ($)
                   </label>
                   <input 
-                    type="number" 
+                    type="text" 
+                    inputMode="decimal"
                     className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md text-body-md text-primary font-bold focus:border-primary font-mono transition-colors" 
-                    placeholder="0.00" 
+                    placeholder="0,00" 
                     value={balance}
-                    onChange={(e) => setBalance(e.target.value)}
+                    onChange={(e) => setBalance(db.normalizeAndFormat(e.target.value))}
                     required
                   />
                   <p className="text-[10px] text-on-surface-variant/70 leading-relaxed">Saldo inicial asignado para tus gastos de la semana.</p>
@@ -628,11 +634,12 @@ export default function Onboarding({ onComplete }) {
                     Meta Ahorro Semanal ($)
                   </label>
                   <input 
-                    type="number" 
+                    type="text" 
+                    inputMode="decimal"
                     className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md text-body-md text-on-surface focus:border-primary font-mono transition-colors" 
                     placeholder="Opcional" 
                     value={savingGoal}
-                    onChange={(e) => setSavingGoal(e.target.value)}
+                    onChange={(e) => setSavingGoal(db.normalizeAndFormat(e.target.value))}
                   />
                   <p className="text-[10px] text-on-surface-variant/70 leading-relaxed">Cuánto te propones retener sin gastar.</p>
                 </div>
@@ -659,7 +666,7 @@ export default function Onboarding({ onComplete }) {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-sm cursor-pointer select-none">
+                         <label className="flex items-center gap-sm cursor-pointer select-none">
                           <input 
                             type="checkbox" 
                             className="rounded border-outline-variant/40 bg-black text-primary focus:ring-primary h-4 w-4"
@@ -679,20 +686,22 @@ export default function Onboarding({ onComplete }) {
                           <div>
                             <label className="block text-[10px] text-on-surface-variant uppercase font-bold mb-1">Monto Meta ($)</label>
                             <input 
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               className="w-full bg-black border border-outline-variant/30 rounded py-1 px-2 text-xs text-white font-mono"
                               value={pocket.targetAmount}
-                              onChange={(e) => handlePocketAmountChange(pocket.id, 'targetAmount', e.target.value)}
+                              onChange={(e) => handlePocketAmountChange(pocket.id, 'targetAmount', db.normalizeAndFormat(e.target.value))}
                             />
                           </div>
                           <div>
                             <label className="block text-[10px] text-on-surface-variant uppercase font-bold mb-1">Semilla Ahorrado ($)</label>
                             <input 
-                              type="number"
+                              type="text"
+                              inputMode="decimal"
                               className="w-full bg-black border border-outline-variant/30 rounded py-1 px-2 text-xs text-primary font-mono font-bold"
                               value={pocket.currentAmount}
-                              placeholder="0.00"
-                              onChange={(e) => handlePocketAmountChange(pocket.id, 'currentAmount', e.target.value)}
+                              placeholder="0,00"
+                              onChange={(e) => handlePocketAmountChange(pocket.id, 'currentAmount', db.normalizeAndFormat(e.target.value))}
                             />
                           </div>
                         </div>
@@ -733,9 +742,9 @@ export default function Onboarding({ onComplete }) {
                   U-Pocket bloqueará mentalmente este presupuesto del saldo disponible, protegiéndolo de cualquier gasto no planificado.
                 </p>
                 
-                <div className="space-y-sm max-h-[220px] overflow-y-auto pr-xs custom-scrollbar">
+                <div className="space-y-sm max-h-[300px] overflow-y-auto pr-xs custom-scrollbar">
                   {fixedExpenses.map((expense, index) => (
-                    <div key={index} className="flex gap-md items-center animate-fade-in">
+                    <div key={index} className="flex flex-col sm:flex-row gap-sm sm:gap-md items-stretch sm:items-center p-sm sm:p-0 bg-white/[0.01] sm:bg-transparent rounded-lg border border-outline-variant/10 sm:border-none animate-fade-in">
                       <div className="flex-1 relative">
                         <input 
                           type="text" 
@@ -746,27 +755,32 @@ export default function Onboarding({ onComplete }) {
                           required
                         />
                       </div>
-                      <div className="w-[130px] relative">
-                        <span className="absolute left-sm top-1/2 -translate-y-1/2 font-mono text-body-md text-on-surface-variant/70">$</span>
-                        <input 
-                          type="number" 
-                          className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm pl-md pr-md text-body-md font-mono text-on-surface font-semibold placeholder:text-on-surface-variant/30" 
-                          placeholder="0.00" 
-                          value={expense.amount}
-                          onChange={(e) => handleFixedChange(index, 'amount', e.target.value)}
-                          required
-                        />
-                      </div>
                       
-                      {fixedExpenses.length > 1 && (
-                        <button 
-                          type="button" 
-                          className="p-sm text-error bg-error/10 hover:bg-error/20 border border-error/20 rounded-lg transition-colors flex items-center justify-center shrink-0 active:scale-95 duration-100" 
-                          onClick={() => removeFixedExpense(index)}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      )}
+                      <div className="flex gap-sm items-center sm:w-[150px]">
+                        <div className="flex-1 relative">
+                          <span className="absolute left-sm top-1/2 -translate-y-1/2 font-mono text-body-md text-on-surface-variant/70">$</span>
+                          <input 
+                            type="text" 
+                            inputMode="decimal"
+                            className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm pl-md pr-sm text-body-md font-mono text-on-surface font-semibold placeholder:text-on-surface-variant/30" 
+                            placeholder="0,00" 
+                            value={expense.amount}
+                            onChange={(e) => handleFixedChange(index, 'amount', db.normalizeAndFormat(e.target.value))}
+                            required
+                          />
+                        </div>
+                        
+                        {fixedExpenses.length > 1 && (
+                          <button 
+                            type="button" 
+                            className="p-sm text-error bg-error/10 hover:bg-error/20 border border-error/20 rounded-lg transition-colors flex items-center justify-center shrink-0 active:scale-95 duration-100 h-10 w-10" 
+                            onClick={() => removeFixedExpense(index)}
+                            title="Eliminar gasto fijo"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

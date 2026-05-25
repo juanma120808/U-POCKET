@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { db } from '../services/db';
 
 export default function PocketsView({ 
   pockets, 
@@ -73,13 +74,15 @@ export default function PocketsView({
   // Handle New Pocket Submission
   const handleCreatePocket = (e) => {
     e.preventDefault();
-    if (!pocketName || !pocketTarget || parseFloat(pocketTarget) <= 0) return;
+    const targetVal = db.parseFormattedMoney(pocketTarget);
+    const currentVal = db.parseFormattedMoney(pocketCurrent);
+    if (!pocketName || !pocketTarget || targetVal <= 0) return;
 
     const newPocket = {
       id: Date.now().toString(),
       name: pocketName,
-      targetAmount: parseFloat(pocketTarget),
-      currentAmount: parseFloat(pocketCurrent) || 0,
+      targetAmount: targetVal,
+      currentAmount: currentVal || 0,
       category: pocketCategory,
       date: pocketDate || 'Indefinido',
       icon: pocketIcon
@@ -125,7 +128,7 @@ export default function PocketsView({
   // Handle Deposit / Withdrawal Transfer Submission
   const handleTransferSubmit = (e) => {
     e.preventDefault();
-    const amount = parseFloat(transferAmount);
+    const amount = db.parseFormattedMoney(transferAmount);
     if (!amount || amount <= 0) return;
 
     if (transferType === 'deposit') {
@@ -432,11 +435,12 @@ export default function PocketsView({
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Monto Meta ($)</label>
                   <input 
-                    type="number" 
+                    type="text" 
+                    inputMode="decimal"
                     className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md font-mono text-body-md text-primary font-bold focus:outline-none focus:border-primary transition-all"
-                    placeholder="0.00" 
+                    placeholder="0,00" 
                     value={pocketTarget}
-                    onChange={(e) => setPocketTarget(e.target.value)}
+                    onChange={(e) => setPocketTarget(db.normalizeAndFormat(e.target.value))}
                     required
                   />
                 </div>
@@ -444,11 +448,12 @@ export default function PocketsView({
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Fondeo Inicial ($)</label>
                   <input 
-                    type="number" 
+                    type="text" 
+                    inputMode="decimal"
                     className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md font-mono text-body-md text-on-surface focus:outline-none focus:border-primary transition-all"
-                    placeholder="0.00" 
+                    placeholder="0,00" 
                     value={pocketCurrent}
-                    onChange={(e) => setPocketCurrent(e.target.value)}
+                    onChange={(e) => setPocketCurrent(db.normalizeAndFormat(e.target.value))}
                   />
                 </div>
               </div>
@@ -571,12 +576,12 @@ export default function PocketsView({
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Monto a Trasladar ($)</label>
                 <input 
-                  type="number" 
-                  step="0.01"
+                  type="text" 
+                  inputMode="decimal"
                   className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md font-mono text-body-md text-primary font-bold focus:outline-none focus:border-primary transition-all"
-                  placeholder="0.00" 
+                  placeholder="0,00" 
                   value={transferAmount}
-                  onChange={(e) => setTransferAmount(e.target.value)}
+                  onChange={(e) => setTransferAmount(db.normalizeAndFormat(e.target.value))}
                   required
                   autoFocus
                 />

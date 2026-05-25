@@ -8,7 +8,8 @@ export default function Dashboard({
   openTxModal, 
   openFundsModal, 
   pockets, 
-  setActiveTab 
+  setActiveTab,
+  onEditExpense
 }) {
   // Aggregate category sums
   const fixedTotal = expenses.filter(e => e.type === 'Fixed').reduce((acc, curr) => acc + curr.amount, 0);
@@ -142,7 +143,11 @@ export default function Dashboard({
                       }
 
                       return (
-                        <tr key={idx} className="hover:bg-white/[0.02] transition-colors cursor-pointer group">
+                        <tr 
+                          key={idx} 
+                          onClick={() => onEditExpense && onEditExpense(tx)}
+                          className="hover:bg-white/[0.02] transition-colors cursor-pointer group"
+                        >
                           <td className="px-lg py-md">
                             <div className="flex items-center gap-md">
                               <div className="h-10 w-10 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/20 group-hover:border-primary/40 transition-colors">

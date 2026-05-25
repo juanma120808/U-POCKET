@@ -28,6 +28,8 @@ function App() {
   // Modals state
   const [showTxModal, setShowTxModal] = useState(false);
   const [showFundsModal, setShowFundsModal] = useState(false);
+  const [showEditTxModal, setShowEditTxModal] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null);
   
   // Transaction Modal Form state
   const [txName, setTxName] = useState('');
@@ -38,6 +40,12 @@ function App() {
   // Funds Adjustment Form state
   const [adjInitialBalance, setAdjInitialBalance] = useState('');
   const [adjFixedExpenses, setAdjFixedExpenses] = useState('');
+
+  // Edit Transaction Form state
+  const [editTxName, setEditTxName] = useState('');
+  const [editTxAmount, setEditTxAmount] = useState('');
+  const [editTxCategory, setEditTxCategory] = useState('Fijos');
+  const [editTxDetails, setEditTxDetails] = useState('');
 
   // Theme Sync
   useEffect(() => {
@@ -175,13 +183,15 @@ function App() {
 
   const handleCreateTransactionSubmit = (e) => {
     e.preventDefault();
-    if (!txName || !txAmount || parseFloat(txAmount) <= 0) return;
+    const amountFloat = db.parseFormattedMoney(txAmount);
+    if (!txName || !txAmount || amountFloat <= 0) return;
 
     const mappedType = txCategory === 'Fijos' ? 'Fixed' : txCategory === 'Ocio' ? 'Leisure' : 'Minor';
 
     const newTx = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
       name: txName,
-      amount: parseFloat(txAmount),
+      amount: amountFloat,
       type: mappedType,
       date: new Date().toISOString(),
       details: txDetails || (txCategory === 'Fijos' ? 'Gasto Fijo Obligatorio' : txCategory === 'Ocio' ? 'Gasto Ocio' : 'Gasto Hormiga/Menor')
@@ -199,16 +209,63 @@ function App() {
 
   const handleUpdateFundsSubmit = (e) => {
     e.preventDefault();
-    if (!adjInitialBalance || parseFloat(adjInitialBalance) < 0) return;
+    const parsedBalance = db.parseFormattedMoney(adjInitialBalance);
+    const parsedFixed = db.parseFormattedMoney(adjFixedExpenses);
+    if (parsedBalance < 0) return;
 
     const updated = {
       ...userProfile,
-      initialBalance: parseFloat(adjInitialBalance),
-      fixedExpenses: adjFixedExpenses !== '' ? parseFloat(adjFixedExpenses) : userProfile.fixedExpenses
+      initialBalance: parsedBalance,
+      fixedExpenses: parsedFixed !== '' ? parsedFixed : userProfile.fixedExpenses
     };
 
     handleUpdateUserProfile(updated);
     setShowFundsModal(false);
+  };
+
+  const handleEditExpenseClick = (expense) => {
+    setSelectedExpense(expense);
+    setEditTxName(expense.name);
+    setEditTxAmount(db.normalizeAndFormat(expense.amount));
+    setEditTxCategory(expense.type === 'Fixed' ? 'Fijos' : expense.type === 'Leisure' ? 'Ocio' : 'Hormiga');
+    setEditTxDetails(expense.details || '');
+    setShowEditTxModal(true);
+  };
+
+  const handleEditExpenseSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedExpense || !editTxName || !editTxAmount) return;
+
+    const parsedAmount = db.parseFormattedMoney(editTxAmount);
+    if (parsedAmount <= 0) return;
+
+    const mappedType = editTxCategory === 'Fijos' ? 'Fixed' : editTxCategory === 'Ocio' ? 'Leisure' : 'Minor';
+
+    const updatedTx = {
+      ...selectedExpense,
+      name: editTxName,
+      amount: parsedAmount,
+      type: mappedType,
+      details: editTxDetails || (editTxCategory === 'Fijos' ? 'Gasto Fijo Obligatorio' : editTxCategory === 'Ocio' ? 'Gasto Ocio' : 'Gasto Hormiga/Menor')
+    };
+
+    // Update in database and state
+    const key = `upocket_expenses_${userProfile.email.toLowerCase()}`;
+    const updated = await db.updateExpense(userProfile.email, updatedTx);
+    setExpenses(updated);
+    
+    setShowEditTxModal(false);
+    setSelectedExpense(null);
+  };
+
+  const handleDeleteExpenseClick = async () => {
+    if (!selectedExpense) return;
+    if (confirm(`¿Estás seguro de eliminar el gasto "${selectedExpense.name}"?\nEsta acción no se puede deshacer y retornará este monto a tu presupuesto.`)) {
+      const updated = await db.deleteExpense(userProfile.email, selectedExpense);
+      setExpenses(updated);
+      setShowEditTxModal(false);
+      setSelectedExpense(null);
+    }
   };
 
   // Calculations
@@ -223,15 +280,15 @@ function App() {
   // open and prepopulate forms
   const openFundsModal = () => {
     if (userProfile) {
-      setAdjInitialBalance(userProfile.initialBalance.toString());
-      setAdjFixedExpenses(userProfile.fixedExpenses.toString());
+      setAdjInitialBalance(db.normalizeAndFormat(userProfile.initialBalance));
+      setAdjFixedExpenses(db.normalizeAndFormat(userProfile.fixedExpenses));
       setShowFundsModal(true);
     }
   };
 
   if (currentView === 'loading') {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <div className="flex h-screen w-full max-w-full items-center justify-center bg-background">
         <div className="text-center animate-fade-in">
           <h2 className="text-primary font-headline-lg font-bold text-[28px] mb-2 tracking-tight">U-Pocket</h2>
           <p className="text-on-surface-variant font-label-md uppercase tracking-widest animate-pulse">Cargando Bienestar Financiero...</p>
@@ -259,6 +316,7 @@ function App() {
             openFundsModal={openFundsModal}
             pockets={pockets}
             setActiveTab={setActiveTab}
+            onEditExpense={handleEditExpenseClick}
           />
         );
       case 'history':
@@ -267,6 +325,7 @@ function App() {
             expenses={expenses} 
             addExpense={handleAddExpense}
             openTxModal={() => { setTxCategory('Fijos'); setShowTxModal(true); }}
+            onEditExpense={handleEditExpenseClick}
           />
         );
       case 'pockets':
@@ -419,6 +478,50 @@ function App() {
               </button>
             </nav>
             <div className="mt-auto px-sm pt-lg space-y-md">
+              {/* Premium Database Sync Status Badge (Mobile Drawer) */}
+              <div 
+                onClick={() => { setCurrentView('onboarding'); setMobileMenuOpen(false); }}
+                className={`flex items-center justify-between px-3 py-2 bg-surface-container-low border rounded-lg text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-all ${
+                  db.isCloudActive() 
+                    ? 'border-green-500/30 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' 
+                    : 'border-outline-variant/20 text-on-surface-variant'
+                }`}
+              >
+                <span className="flex items-center gap-xs">
+                  <span className={`w-1.5 h-1.5 rounded-full ${db.isCloudActive() ? 'bg-green-500 animate-pulse' : 'bg-orange-400'}`}></span>
+                  <span className="text-on-surface font-semibold">Base de Datos</span>
+                </span>
+                <span className="font-mono text-[10px] text-primary">{db.isCloudActive() ? 'Nube' : 'Local'}</span>
+              </div>
+
+              {/* Dynamic Premium Theme Selector (Mobile Drawer) */}
+              <div className="flex flex-col gap-xs">
+                <span className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Tema de Interfaz</span>
+                <div className="flex gap-sm items-center bg-surface-container-low px-sm py-1 rounded-full border border-outline-variant/10">
+                  <button 
+                    onClick={() => changeTheme('dark')}
+                    className={`p-1.5 rounded-full flex-1 flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-primary text-on-primary shadow-sm scale-105 font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}
+                  >
+                    <span className="material-symbols-outlined text-[15px] mr-1">dark_mode</span>
+                    <span className="text-[10px] font-bold">Space</span>
+                  </button>
+                  <button 
+                    onClick={() => changeTheme('light')}
+                    className={`p-1.5 rounded-full flex-1 flex items-center justify-center transition-all ${theme === 'light' ? 'bg-primary text-on-primary shadow-sm scale-105 font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}
+                  >
+                    <span className="material-symbols-outlined text-[15px] mr-1">light_mode</span>
+                    <span className="text-[10px] font-bold">Glass</span>
+                  </button>
+                  <button 
+                    onClick={() => changeTheme('custom')}
+                    className={`p-1.5 rounded-full flex-1 flex items-center justify-center transition-all ${theme === 'custom' ? 'bg-primary text-on-primary shadow-sm scale-105 font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}
+                  >
+                    <span className="material-symbols-outlined text-[15px] mr-1">terminal</span>
+                    <span className="text-[10px] font-bold">Cyber</span>
+                  </button>
+                </div>
+              </div>
+
               <button 
                 onClick={() => { setTxCategory('Fijos'); setShowTxModal(true); setMobileMenuOpen(false); }}
                 className="w-full flex items-center justify-center gap-sm bg-primary text-on-primary py-md rounded-lg font-label-md text-label-md font-bold"
@@ -440,7 +543,7 @@ function App() {
       )}
 
       {/* 2. Main Work Area */}
-      <div className="flex-1 flex flex-col md:ml-[240px] min-h-screen">
+      <div className="flex-1 flex flex-col md:ml-[240px] min-h-screen min-w-0 w-full overflow-x-hidden">
         
         {/* Top Navbar */}
         <header className="sticky top-0 z-40 flex justify-between items-center w-full h-16 px-lg bg-surface/70 backdrop-blur-xl border-b border-outline-variant/20 gap-md">
@@ -468,7 +571,7 @@ function App() {
             {/* Premium Database Sync Status Badge */}
             <div 
               onClick={() => setCurrentView('onboarding')}
-              className={`flex items-center gap-xs px-2.5 py-1 bg-surface-container-low border rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+              className={`hidden sm:flex items-center gap-xs px-2.5 py-1 bg-surface-container-low border rounded-full text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all hover:scale-105 active:scale-95 ${
                 db.isCloudActive() 
                   ? 'border-green-500/30 text-green-500 shadow-[0_0_10px_rgba(34,197,94,0.1)]' 
                   : 'border-outline-variant/20 text-on-surface-variant'
@@ -482,7 +585,7 @@ function App() {
             </div>
 
             {/* Dynamic Premium Theme Selector */}
-            <div className="flex gap-sm items-center bg-surface-container-low px-sm py-1 rounded-full border border-outline-variant/10">
+            <div className="hidden md:flex gap-sm items-center bg-surface-container-low px-sm py-1 rounded-full border border-outline-variant/10">
               <button 
                 onClick={() => changeTheme('dark')}
                 className={`p-1.5 rounded-full flex items-center justify-center transition-all ${theme === 'dark' ? 'bg-primary text-on-primary shadow-sm scale-105 font-bold' : 'text-on-surface-variant hover:text-on-surface'}`}
@@ -595,7 +698,7 @@ function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-lg py-xl">
           <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowTxModal(false)}></div>
           
-          <div className="glass-panel p-lg rounded-xl w-full max-w-md relative z-10 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="glass-panel p-md sm:p-lg rounded-xl w-full max-w-md relative z-10 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar border border-outline-variant/30">
             <div className="flex justify-between items-center mb-lg pb-sm border-b border-outline-variant/20">
               <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-xs">
                 <span className="material-symbols-outlined text-primary">add_shopping_cart</span>
@@ -627,12 +730,12 @@ function App() {
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Monto ($)</label>
                   <input 
-                    type="number" 
-                    step="0.01"
+                    type="text" 
+                    inputMode="decimal"
                     className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md font-mono text-body-md text-primary font-bold"
-                    placeholder="0.00" 
+                    placeholder="0,00" 
                     value={txAmount}
-                    onChange={(e) => setTxAmount(e.target.value)}
+                    onChange={(e) => setTxAmount(db.normalizeAndFormat(e.target.value))}
                     required
                   />
                 </div>
@@ -690,13 +793,124 @@ function App() {
       )}
 
       {/* ==============================================
+          GLOBAL MODAL: EDITAR TRANSACCIÓN 
+          ============================================== */}
+      {showEditTxModal && selectedExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-lg py-xl">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowEditTxModal(false)}></div>
+          
+          <div className="glass-panel p-md sm:p-lg rounded-xl w-full max-w-md relative z-10 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar border border-outline-variant/30">
+            <div className="flex justify-between items-center mb-lg pb-sm border-b border-outline-variant/20">
+              <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-xs">
+                <span className="material-symbols-outlined text-primary">edit_note</span>
+                Editar Transacción
+              </h3>
+              <button 
+                onClick={() => setShowEditTxModal(false)}
+                className="text-on-surface-variant hover:text-on-surface"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditExpenseSubmit} className="space-y-md">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">¿Qué compraste / pagaste?</label>
+                <input 
+                  type="text" 
+                  className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md text-body-md text-on-surface"
+                  placeholder="Ej. Supermercado, Cine, Uber, etc." 
+                  value={editTxName}
+                  onChange={(e) => setEditTxName(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-md">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Monto ($)</label>
+                  <input 
+                    type="text" 
+                    inputMode="decimal"
+                    className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md font-mono text-body-md text-primary font-bold"
+                    placeholder="0,00" 
+                    value={editTxAmount}
+                    onChange={(e) => setEditTxAmount(db.normalizeAndFormat(e.target.value))}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Categoría</label>
+                  <select 
+                    className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md text-body-md text-on-surface"
+                    value={editTxCategory}
+                    onChange={(e) => setEditTxCategory(e.target.value)}
+                  >
+                    <option value="Fijos">Gasto Fijo</option>
+                    <option value="Hormiga">Gasto Hormiga</option>
+                    <option value="Ocio">Gasto Ocio</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Detalles Adicionales</label>
+                <textarea 
+                  rows="2"
+                  className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md text-body-md text-on-surface"
+                  placeholder="Ej. Compras semanales, café de la tarde (opcional)..." 
+                  value={editTxDetails}
+                  onChange={(e) => setEditTxDetails(e.target.value)}
+                />
+              </div>
+
+              <div className="bg-primary-container/10 border border-primary/20 p-md rounded-lg text-xs text-on-surface-variant flex items-start gap-xs">
+                <span className="material-symbols-outlined text-primary text-[18px] shrink-0">info</span>
+                <p>
+                  Al guardar, se recalculará automáticamente tu saldo y la distribución de gastos.
+                </p>
+              </div>
+
+              <div className="pt-sm flex gap-md justify-between">
+                <button 
+                  type="button" 
+                  onClick={handleDeleteExpenseClick}
+                  className="px-md py-md bg-error/10 hover:bg-error/20 text-error border border-error/20 rounded-lg font-bold transition-all active:scale-95 duration-100 flex items-center gap-xs"
+                >
+                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                  Eliminar Gasto
+                </button>
+                <div className="flex gap-sm">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowEditTxModal(false)}
+                    className="px-lg py-md border border-outline-variant/30 text-on-surface rounded-lg font-bold hover:bg-white/5 active:scale-95 duration-100"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="px-lg py-md bg-primary text-on-primary rounded-lg font-bold hover:opacity-90 active:scale-95 duration-100 flex items-center gap-xs"
+                  >
+                    Guardar
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==============================================
           GLOBAL MODAL: AJUSTAR FONDOS / PRESUPUESTO
           ============================================== */}
       {showFundsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-lg py-xl">
           <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowFundsModal(false)}></div>
           
-          <div className="glass-panel p-lg rounded-xl w-full max-w-md relative z-10 animate-fade-in">
+          <div className="glass-panel p-md sm:p-lg rounded-xl w-full max-w-md relative z-10 animate-fade-in border border-outline-variant/30">
             <div className="flex justify-between items-center mb-lg pb-sm border-b border-outline-variant/20">
               <h3 className="font-headline-md text-headline-md text-primary flex items-center gap-xs">
                 <span className="material-symbols-outlined text-primary">wallet</span>
@@ -714,11 +928,12 @@ function App() {
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Saldo Semanal / Disponible ($)</label>
                 <input 
-                  type="number" 
+                  type="text" 
+                  inputMode="decimal"
                   className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm px-md font-mono text-body-md text-primary font-bold"
-                  placeholder="0.00" 
+                  placeholder="0,00" 
                   value={adjInitialBalance}
-                  onChange={(e) => setAdjInitialBalance(e.target.value)}
+                  onChange={(e) => setAdjInitialBalance(db.normalizeAndFormat(e.target.value))}
                   required
                 />
                 <p className="text-[11px] text-on-surface-variant mt-sm">Monto asignado total para tu semana de gastos.</p>
@@ -727,11 +942,12 @@ function App() {
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-xs">Gastos Fijos Planificados ($)</label>
                 <input 
-                  type="number" 
+                  type="text" 
+                  inputMode="decimal"
                   className="w-full bg-[#0A0A0A] border border-outline-variant/30 rounded-lg py-sm pl-md pr-md text-body-md font-mono text-on-surface font-semibold placeholder:text-on-surface-variant/30" 
-                  placeholder="0.00" 
+                  placeholder="0,00" 
                   value={adjFixedExpenses}
-                  onChange={(e) => setAdjFixedExpenses(e.target.value)}
+                  onChange={(e) => setAdjFixedExpenses(db.normalizeAndFormat(e.target.value))}
                   required
                 />
                 <p className="text-[11px] text-on-surface-variant mt-sm">El presupuesto mínimo intocable protegido por la aplicación.</p>
